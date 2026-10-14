@@ -1,8 +1,8 @@
 {
   "source_branch": "fix/composition-input",
-  "source_commit": "44decb4dcd59921bd677a623946d0f5676c203a3",
-  "upstream_base": "371769f1ff378bc0bd886440e0f97fc94aaeae5d",
-  "patch_sha256": "4608e2919e0391550975adb93db01cbb513339dc05e6937c9f5bf167f30d9554",
+  "source_commit": "cd5692f5fb83df0d362315d55ed182a454214b0e",
+  "upstream_base": "d599978f0ecf794b16cb6ec0b5875f818b822507",
+  "patch_sha256": "286395247a8782130015779b33e250dd641ef6aed3ae0eea05f85192ae44125b",
   "packages": [
     "gpui-fast",
     "gpui-fast-linux",
