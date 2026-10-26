@@ -32,8 +32,9 @@ use cocoa::{
 };
 use collections::{FxHashMap, FxHashSet};
 use gpui::{
-    Bounds, ComposedScene, CompositionSurfaceId, DevicePixels, PlatformCompositionSurface,
-    PlatformCompositionSurfaceContent, PlatformSurfaceAttachment, Point, Size, px,
+    Bounds, ComposedScene, ComposedSceneLayer, CompositionSurfaceId, DevicePixels,
+    PlatformCompositionSurface, PlatformCompositionSurfaceContent, PlatformSurfaceAttachment,
+    Point, Scene, Size, px,
 };
 use objc::{
     class,
@@ -502,23 +503,30 @@ pub(crate) fn draw_composed(window_state: &Arc<Mutex<MacWindowState>>, scene: Co
         state.renderer.draw(scene.scene());
         return;
     };
+    let whole_scene = single_layer_scene(scene.scene(), scene.layers());
     for layer in scene.layers() {
-        let surface_scene = match scene.layer_scene(layer) {
-            Ok(surface_scene) => surface_scene,
-            Err(error) => {
-                log::error!("replaying AppKit composition scene: {error:#}");
-                return;
-            }
+        let replayed_scene;
+        let surface_scene = if let Some(whole_scene) = whole_scene {
+            whole_scene
+        } else {
+            replayed_scene = match scene.layer_scene(layer) {
+                Ok(surface_scene) => surface_scene,
+                Err(error) => {
+                    log::error!("replaying AppKit composition scene: {error:#}");
+                    return;
+                }
+            };
+            &replayed_scene
         };
         if layer.surface == base_surface {
-            state.renderer.draw(&surface_scene);
+            state.renderer.draw(surface_scene);
         } else if let Some(surface) = state.fast_composition.gpui_surfaces.get_mut(&layer.surface) {
             {
                 let mut regions = surface.input_regions.borrow_mut();
                 regions.clear();
                 regions.extend(scene.layer_hitboxes(layer).iter().cloned());
             }
-            surface.renderer.draw(&surface_scene);
+            surface.renderer.draw(surface_scene);
         } else {
             log::error!(
                 "missing AppKit GPUI composition surface {:?}",
@@ -527,6 +535,22 @@ pub(crate) fn draw_composed(window_state: &Arc<Mutex<MacWindowState>>, scene: Co
         }
     }
 }
+
+/// `present` supplies the current frame's scene after `Frame::finish`.
+/// Borrow it only when this layer contains its entire paint-operation stream.
+fn single_layer_scene<'a>(scene: &'a Scene, layers: &[ComposedSceneLayer]) -> Option<&'a Scene> {
+    let [layer] = layers else {
+        return None;
+    };
+    let [range] = layer.ranges.as_slice() else {
+        return None;
+    };
+    (range.start == 0 && range.end == scene.len()).then_some(scene)
+}
+
+#[cfg(test)]
+#[path = "composition_tests.rs"]
+mod tests;
 
 /// `PlatformWindow::enable_window_composition`: an AppKit window can always
 /// compose, and sets itself up when it's first given an order.
