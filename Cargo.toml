@@ -1,3 +1,3 @@
 [workspace]
 resolver = "2"
-members = ["gpui_macos"]
+members = ["gpui_macos", "gpui_windows", "gpui_linux"]
