@@ -1,4 +1,4 @@
-use super::single_layer_scene;
+use super::whole_scene_layer;
 use gpui::{
     AppContext as _, Bounds, ComposedSceneLayer, CompositionSurfaceId, ContentMask, Context,
     DevicePixels, IntoElement, ParentElement as _, PlatformHeadlessRenderer as _, Quad, Render,
@@ -8,7 +8,7 @@ use gpui::{
 use crate::metal_renderer::MetalHeadlessRenderer;
 
 #[gpui::test]
-fn single_layer_rounded_scene_matches_balanced_replay(cx: &mut TestAppContext) {
+fn whole_scene_with_empty_layers_matches_balanced_replay(cx: &mut TestAppContext) {
     struct View;
     impl Render for View {
         fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
@@ -35,32 +35,43 @@ fn single_layer_rounded_scene_matches_balanced_replay(cx: &mut TestAppContext) {
                 !scene.layers.frames.is_empty(),
                 "rounded clips were compiled"
             );
-            let layer = ComposedSceneLayer {
+            let full = ComposedSceneLayer {
                 surface: CompositionSurfaceId::default(),
                 ranges: vec![0..scene.len()],
             };
-            let layers = [layer];
-            let borrowed = single_layer_scene(scene, &layers).unwrap();
-            assert!(std::ptr::eq(borrowed, scene));
+            let empty = ComposedSceneLayer {
+                surface: CompositionSurfaceId::default(),
+                ranges: vec![],
+            };
 
             // The existing layer_scene path replays the original operations,
             // including rounded clips, and finishes the new surface scene.
             let mut replayed = Scene::default();
             replayed
-                .replay_balanced(layers[0].ranges[0].clone(), scene)
+                .replay_balanced(full.ranges[0].clone(), scene)
                 .unwrap();
             replayed.finish();
 
             let side = (64. * window.scale_factor()) as i32;
             let extent = size(DevicePixels(side), DevicePixels(side));
             let expected = renderer.render_scene_to_image(&replayed, extent).unwrap();
-            let actual = renderer.render_scene_to_image(borrowed, extent).unwrap();
-            assert_eq!(actual.as_raw(), expected.as_raw());
-            assert_eq!(actual.get_pixel(1, 1).0, [255, 255, 255, 255]);
-            assert_eq!(
-                actual.get_pixel(side as u32 / 2, side as u32 / 2).0,
-                [0, 0, 0, 255]
-            );
+            for (layers, expected_target) in [
+                (vec![full.clone(), empty.clone()], 0),
+                (vec![empty.clone(), full.clone()], 1),
+                (vec![full.clone()], 0),
+                (vec![empty.clone(), full, empty], 1),
+            ] {
+                let (target_index, borrowed) = whole_scene_layer(scene, &layers).unwrap();
+                assert_eq!(target_index, expected_target);
+                assert!(std::ptr::eq(borrowed, scene));
+                let actual = renderer.render_scene_to_image(borrowed, extent).unwrap();
+                assert_eq!(actual.as_raw(), expected.as_raw());
+                assert_eq!(actual.get_pixel(1, 1).0, [255, 255, 255, 255]);
+                assert_eq!(
+                    actual.get_pixel(side as u32 / 2, side as u32 / 2).0,
+                    [0, 0, 0, 255]
+                );
+            }
         })
         .unwrap();
 }
@@ -91,19 +102,27 @@ fn partial_or_split_layers_require_replay_even_when_primitives_match() {
         vec![layer(vec![0..len - 1])],
         vec![layer(vec![1..len])],
         vec![layer(vec![0..1, 1..len])],
-        vec![layer(vec![0..len]), layer(vec![])],
+        vec![layer(vec![0..len]), layer(vec![0..len])],
+        vec![layer(vec![0..len]), layer(vec![1..len - 1])],
+        vec![layer(vec![0..len]), layer(vec![0..0])],
         vec![layer(vec![])],
+        vec![layer(vec![]), layer(vec![])],
         vec![layer(vec![0..len + 1])],
         vec![],
     ] {
-        assert!(single_layer_scene(&scene, &layers).is_none(), "{layers:?}");
+        assert!(whole_scene_layer(&scene, &layers).is_none(), "{layers:?}");
     }
 
     let mut empty = Scene::default();
     empty.finish();
-    assert!(single_layer_scene(&empty, &[layer(vec![])]).is_none());
-    assert!(std::ptr::eq(
-        single_layer_scene(&empty, &[layer(vec![0..0])]).unwrap(),
-        &empty,
-    ));
+    assert!(whole_scene_layer(&empty, &[layer(vec![])]).is_none());
+    for (layers, expected_target) in [
+        (vec![layer(vec![0..0])], 0),
+        (vec![layer(vec![]), layer(vec![0..0]), layer(vec![])], 1),
+    ] {
+        let (target_index, borrowed) = whole_scene_layer(&empty, &layers).unwrap();
+        assert_eq!(target_index, expected_target);
+        assert!(std::ptr::eq(borrowed, &empty));
+    }
+    assert!(whole_scene_layer(&empty, &[layer(vec![0..0]), layer(vec![0..0])]).is_none());
 }
