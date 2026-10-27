@@ -1,5 +1,4 @@
 // Modified by Longbridge for gpui-fast.
-// Modified by Pioneer: reuse finished full composition scenes.
 //! Pixel tests of scroll layers on Direct3D 11: the same content drawn
 //! directly and through layer tiles must come out byte for byte the same.
 //!

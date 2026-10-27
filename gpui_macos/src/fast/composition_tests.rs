@@ -1,4 +1,4 @@
-// Modified by Pioneer for the macOS single-layer scene fast path.
+// Modified by Longbridge for gpui-fast.
 use super::whole_scene_layer;
 use gpui::{
     AppContext as _, Bounds, ComposedSceneLayer, CompositionSurfaceId, ContentMask, Context,

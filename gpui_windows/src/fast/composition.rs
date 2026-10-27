@@ -1,5 +1,4 @@
 // Modified by Longbridge for gpui-fast.
-// Modified by Pioneer: reuse finished full composition scenes.
 //! Window composition on DirectComposition: native views between GPUI's base
 //! content and its overlays (zed-industries/zed#62379).
 //!

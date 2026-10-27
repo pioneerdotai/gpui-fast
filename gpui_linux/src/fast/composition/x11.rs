@@ -1,5 +1,4 @@
 // Modified by Longbridge for gpui-fast.
-// Modified by Pioneer: reuse finished full composition scenes.
 //! Window composition on X11 (zed-industries/zed#62379).
 //!
 //! X11 draws every GPUI composition surface into the window itself: a child

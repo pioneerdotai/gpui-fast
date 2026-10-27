@@ -1,4 +1,4 @@
-// Modified by Pioneer: reuse finished full composition scenes.
+// Modified by Longbridge for gpui-fast.
 use super::whole_scene_layer;
 use gpui::PlatformHeadlessRenderer as _;
 use gpui::{

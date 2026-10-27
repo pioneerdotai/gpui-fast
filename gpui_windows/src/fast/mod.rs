@@ -1,5 +1,4 @@
 // Modified by Longbridge for gpui-fast.
-// Modified by Pioneer: reuse finished full composition scenes.
 //! Everything gpui-fast adds to the Windows platform lives under this module.
 //!
 //! The rest of this crate is kept as close to upstream GPUI (Zed's
@@ -12,8 +11,12 @@
 pub(crate) mod class_names;
 pub(crate) mod composition;
 mod composition_scene;
+pub(crate) mod device_wake;
 pub(crate) mod draw_state;
 pub(crate) mod frame;
+pub(crate) mod frame_schedule;
 pub(crate) mod globals;
 pub(crate) mod layers;
+#[cfg(test)]
+pub(crate) mod native_tests;
 pub(crate) mod rounded_clip;

@@ -1,5 +1,4 @@
 // Modified by Longbridge for gpui-fast.
-// Modified by Pioneer: reuse finished full composition scenes.
 //! Window composition on Wayland (zed-industries/zed#62379).
 //!
 //! Every composition surface other than the window's own `wl_surface` is a

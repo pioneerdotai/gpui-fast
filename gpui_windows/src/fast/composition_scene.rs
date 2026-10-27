@@ -1,4 +1,4 @@
-// Modified by Pioneer: reuse finished full composition scenes.
+// Modified by Longbridge for gpui-fast.
 //! Selection of the current finished scene for one composition surface.
 
 use gpui::{ComposedSceneLayer, Scene};
